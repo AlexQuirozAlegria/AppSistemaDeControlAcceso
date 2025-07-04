@@ -12,13 +12,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView // Import ImageView
-import android.widget.TextView // Import TextView
 import android.widget.Toast
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
-import com.example.androidqr.R // Import R to access resource IDs
 import com.example.androidqr.databinding.FragmentHomeBinding
 
 // ZXing imports (ensure you have the dependency in build.gradle)
@@ -29,8 +26,7 @@ import com.google.zxing.common.BitMatrix
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
-import java.util.UUID // For generateRandomString
-import kotlin.io.path.exists
+
 
 class HomeFragment : Fragment() {
 
@@ -53,11 +49,7 @@ class HomeFragment : Fragment() {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        // --- Get references to your Views from fragment_home.xml ---
-        // Ensure you have these IDs in your fragment_home.xml:
-        // - Button with id: genQR
-        // - ImageView with id: qrCodeImageView
-        // - TextView with id: encodedTextView
+
 
         val generateQrButton: Button = binding.genQR //
         val qrCodeImageView: ImageView = binding.imageView //
