@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">AndroidQR</string>
+    <string name="title_home">Generar invitación</string>
+    <string name="title_dashboard">Mis invitados</string>
+    <string name="title_notifications">Historial</string>
+
+    <string-array name="invitation_types">
+        <item>Única</item>
+        <item>Por Fecha</item>
+        <item>Recurrente</item>
+    </string-array>
+</resources>
