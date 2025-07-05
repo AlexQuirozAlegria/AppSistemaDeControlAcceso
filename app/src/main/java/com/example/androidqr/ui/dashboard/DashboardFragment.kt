@@ -58,19 +58,18 @@ class DashboardFragment : Fragment() {
 
     private fun loadSampleGuests() {
         // Create your sample guest list here
+        // quitar cuando se añada la BD
         allSampleGuests = listOf(
             Guest(id = 1, name = "Ana Torres", status = "Activo"),
             Guest(id = 2, name = "Luis Jimenez", status = "Pendiente"),
             Guest(id = 3, name = "Maria Gonzalez", status = "Vencido"),
-            Guest(id = 4, name = "Carlos वर्मा (Varma)", status = "Activo"),
             Guest(id = 5, name = "Sofia Rodriguez", status = "Activo"),
             Guest(id = 6, name = "David Fernández", status = "Pendiente"),
             Guest(id = 7, name = "Laura Sánchez", status = "Vencido"),
             Guest(id = 8, name = "Pedro Gómez", status = "Activo"),
             Guest(id = 9, name = "Elena Pérez", status = "Pendiente"),
             Guest(id = 10, name = "Miguel Díaz", status = "Activo"),
-            Guest(id = 11, name = "Carmen Ruiz", status = "Vencido"),
-            Guest(id = 12, name = "Javier Moreno", status = "Activo")
+            Guest(id = 11, name = "Carmen Ruiz", status = "Vencido")
             // Add more sample guests as needed
         )
     }
