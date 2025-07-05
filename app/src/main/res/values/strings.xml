@@ -6,7 +6,6 @@
 
     <string-array name="invitation_types">
         <item>Única</item>
-        <item>Por Fecha</item>
         <item>Recurrente</item>
     </string-array>
 </resources>
