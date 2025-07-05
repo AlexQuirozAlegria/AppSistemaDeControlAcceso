@@ -17,6 +17,8 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
 import androidx.fragment.app.Fragment
 import com.example.androidqr.databinding.FragmentHomeBinding
+import androidx.navigation.fragment.findNavController
+import com.example.androidqr.R
 
 // ZXing imports (ensure you have the dependency in build.gradle)
 import com.google.zxing.BarcodeFormat
@@ -28,7 +30,7 @@ import java.io.FileOutputStream
 import java.io.OutputStream
 
 
-class HomeFragment : Fragment() {
+class HomeFragment : Fragment(R.layout.fragment_home) {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
@@ -54,6 +56,8 @@ class HomeFragment : Fragment() {
         val generateQrButton: Button = binding.genQR //
         val qrCodeImageView: ImageView = binding.imageView //
         val shareButton: Button = binding.button2 //
+        val logout: Button = binding.logout
+
         generateQrButton.setOnClickListener {
             displayedText = binding.editTextText3.text.toString() + "/" +
                     binding.editTextText2.text.toString() + " / " +
@@ -127,6 +131,9 @@ class HomeFragment : Fragment() {
                     Toast.LENGTH_LONG
                 ).show()
             }
+        }
+        logout.setOnClickListener {
+            findNavController().navigate(R.id.action_nh_to_login);
         }
         return root
     }
