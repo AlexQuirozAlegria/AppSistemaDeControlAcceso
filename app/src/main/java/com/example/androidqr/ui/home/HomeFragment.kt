@@ -21,7 +21,7 @@ import androidx.lifecycle.lifecycleScope // Import for coroutines
 import com.example.androidqr.databinding.FragmentHomeBinding
 import androidx.navigation.fragment.findNavController
 import com.example.androidqr.R
-import com.example.androidqr.RetrofitClient
+import com.example.androidqr.network.RetrofitClient
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import com.google.zxing.WriterException
