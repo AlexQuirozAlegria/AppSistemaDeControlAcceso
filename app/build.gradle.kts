@@ -1,6 +1,10 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+
+    //retrofit
+    // Use your Kotlin version or latest compatible
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -59,4 +63,5 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     implementation(libs.zxing.android.embedded)
     implementation(libs.core)
+
 }
