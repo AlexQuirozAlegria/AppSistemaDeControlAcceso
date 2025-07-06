@@ -37,11 +37,15 @@ class GuestAdapter(private var guestList: List<Guest>) : // Changed 'guests' to 
         // The IDs used here (guestNameTextView, guestStatusTextView) must match those in item_guest.xml
         private val nameTextView: TextView = itemView.findViewById(R.id.guestNameTextView)
         private val statusChipView: TextView = itemView.findViewById(R.id.statusChip)
+        private val fechaTextView: TextView = itemView.findViewById(R.id.textView2)
         // Add other TextViews or ImageViews from your item_guest.xml as needed
 
         fun bind(guest: Guest) {
             nameTextView.text = guest.name
             statusChipView.text = guest.status
+            if(guest.fechaVencimiento != null){
+                fechaTextView.text = "Fecha de expiracion: ${guest.fechaVencimiento}"
+            }else fechaTextView.visibility = View.GONE;
             // Set other data to your views here
             // For example, if you had an ID TextView:
             // val idTextView: TextView = itemView.findViewById(R.id.guestIdTextView)

@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit
 object RetrofitClient {
 
     // Replace with your base API URL
-    private const val BASE_URL = "http://localhost:5295/"
+    private const val BASE_URL = "https://7359-177-244-168-216.ngrok-free.app/"
 
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY // Log request and response bodies

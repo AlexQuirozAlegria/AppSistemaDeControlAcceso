@@ -1,20 +1,18 @@
 package com.example.androidqr.ui.dashboard
 
-// If you are using lifecycleScope for other reasons, keep it, otherwise it can be removed
-// import androidx.lifecycle.lifecycleScope
-// Replace 'com.yourcompany.androidqr.databinding.FragmentDashboardBinding' with your actual binding class
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope // Keep this for coroutines
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.androidqr.databinding.FragmentDashboardBinding
+import com.example.androidqr.network.InvitadoResponse
+import com.example.androidqr.network.RetrofitClient
 import com.google.android.material.tabs.TabLayout
-
-// Import your Guest data class if it's in a different package
-// import com.example.androidqr.ui.dashboard.Guest // Assuming Guest.kt is in this package
+import kotlinx.coroutines.launch // For coroutines
 
 class DashboardFragment : Fragment() {
 
@@ -22,7 +20,13 @@ class DashboardFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var guestAdapter: GuestAdapter
-    private var allSampleGuests: List<Guest> = emptyList() // To store all sample guests
+    // private var allSampleGuests: List<Guest> = emptyList() // Remove: We'll fetch from API
+    private var allFetchedGuests: List<Guest> = emptyList() // To store guests fetched from API
+
+    // Get the API service instance
+    private val apiService by lazy {
+        RetrofitClient.instance
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -33,50 +37,95 @@ class DashboardFragment : Fragment() {
         val root: View = binding.root
 
         setupRecyclerView()
-        loadSampleGuests() // Load sample data
-        setupTabLayout() // Setup tabs after data is loaded
+        setupTabLayout() // Setup tabs
 
-        // Initially display guests for the first tab (e.g., "Activos")
-        // Ensure tabs are added to tabLayout in your fragment_dashboard.xml
-        // or programmatically before this point if not already done.
-        binding.tabLayout.getTabAt(0)?.let {
-            filterGuestsByStatus(it.text.toString())
-        }
-
+        fetchGuestsFromApi() // New function to load data from API
 
         return root
     }
 
     private fun setupRecyclerView() {
-        // Assuming GuestAdapter is in the same package or imported correctly
-        guestAdapter = GuestAdapter(emptyList())
+        guestAdapter = GuestAdapter(emptyList()) // Start with an empty list
         binding.guestsRecyclerView.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = guestAdapter
         }
     }
 
-    private fun loadSampleGuests() {
-        // Create your sample guest list here
-        // quitar cuando se añada la BD
-        allSampleGuests = listOf(
-            Guest(id = 1, name = "Ana Torres", status = "Activo"),
-            Guest(id = 2, name = "Luis Jimenez", status = "Pendiente"),
-            Guest(id = 3, name = "Maria Gonzalez", status = "Vencido"),
-            Guest(id = 5, name = "Sofia Rodriguez", status = "Activo"),
-            Guest(id = 6, name = "David Fernández", status = "Pendiente"),
-            Guest(id = 7, name = "Laura Sánchez", status = "Vencido"),
-            Guest(id = 8, name = "Pedro Gómez", status = "Activo"),
-            Guest(id = 9, name = "Elena Pérez", status = "Pendiente"),
-            Guest(id = 10, name = "Miguel Díaz", status = "Activo"),
-            Guest(id = 11, name = "Carmen Ruiz", status = "Vencido")
-            // Add more sample guests as needed
-        )
+    private fun fetchGuestsFromApi() {
+        // Show loading indicator (optional, but good UX)
+        binding.guestsRecyclerView.visibility = View.GONE
+        //binding.emptyViewDashboard?.visibility = View.GONE // Assuming you add an empty state view
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val response = apiService.getMyInvitations("AUTORIZO") // Call the new API method
+                if (response.isSuccessful) {
+                    val invitadosFromApi = response.body()
+                    if (invitadosFromApi != null && invitadosFromApi.isNotEmpty()) {
+                        allFetchedGuests = mapInvitadoResponseToGuest(invitadosFromApi)
+                        // Initially display guests for the first tab after data is loaded
+                        binding.tabLayout.getTabAt(0)?.let {
+                            filterGuestsByStatus(it.text.toString())
+                        }
+                        binding.guestsRecyclerView.visibility = View.VISIBLE
+                    } else if (invitadosFromApi != null && invitadosFromApi.isEmpty()) {
+                        Log.i("DashboardFragment", "API returned an empty list of guests.")
+                        allFetchedGuests = emptyList()
+                        guestAdapter.updateData(emptyList()) // Clear adapter
+                        binding.guestsRecyclerView.visibility = View.GONE
+                        //binding.emptyViewDashboard?.visibility = View.VISIBLE // Show empty state
+                        //binding.emptyViewDashboard?.text = "No hay invitados para mostrar."
+                    } else {
+                        Log.e("DashboardFragment", "API response body is null or malformed.")
+                        showErrorState("Error: Respuesta de API inválida.")
+                    }
+                } else {
+                    val errorBody = response.errorBody()?.string() ?: "Error desconocido de API."
+                    Log.e("DashboardFragment", "API Error: ${response.code()} - $errorBody")
+                    showErrorState("Error ${response.code()}: No se pudieron cargar los invitados.")
+                }
+            } catch (e: Exception) {
+
+                Log.e("DashboardFragment", "Network/Request Exception: ${e.message}", e)
+                showErrorState("Error de red: ${e.message}")
+            }
+        }
     }
 
+    // Helper function to map API response to UI model
+    private fun mapInvitadoResponseToGuest(invitados: List<InvitadoResponse>): List<Guest> {
+        return invitados.map { invitadoApi ->
+            Guest(
+                id = invitadoApi.id,
+                name = "${invitadoApi.nombre} ${invitadoApi.apellidos}".trim(), // Combine name and apellidos
+                status = invitadoApi.estadoQr, // Use estadoQr for status
+                fechaVencimiento= invitadoApi.fechaValidez // Use fechaValidez for expiration date
+            )
+        }
+    }
+
+    private fun showErrorState(message: String) {
+        allFetchedGuests = emptyList()
+        guestAdapter.updateData(emptyList())
+        binding.guestsRecyclerView.visibility = View.GONE
+        //binding.emptyViewDashboard?.visibility = View.VISIBLE
+        //binding.emptyViewDashboard?.text = message
+        // Optionally, you could also disable the TabLayout or show an error message there
+    }
+
+
     private fun setupTabLayout() {
-        // Make sure your TabItems are already defined in your fragment_dashboard.xml
-        // e.g., <com.google.android.material.tabs.TabItem android:text="Activos" />
+        // Ensure tabs are added to tabLayout in your fragment_dashboard.xml
+        // or programmatically before this point if not already done.
+        // If tabs are not yet present, add them:
+        if (binding.tabLayout.tabCount == 0) {
+            binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Activos"))
+            binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Pendientes"))
+            binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Vencidos"))
+            // binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Todos")) // If you want an "All" tab
+        }
+
 
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
@@ -90,19 +139,32 @@ class DashboardFragment : Fragment() {
         })
     }
 
-    private fun filterGuestsByStatus(status: String) {
-        val filteredList = when (status.lowercase()) { // Use lowercase for robust comparison
-            "activos" -> allSampleGuests.filter { it.status.equals("Activo", ignoreCase = true) }
-            "pendientes" -> allSampleGuests.filter { it.status.equals("Pendiente", ignoreCase = true) }
-            "vencidos" -> allSampleGuests.filter { it.status.equals("Vencido", ignoreCase = true) }
-            // Add a case for an "All" tab if you have one, or a default
-            // "todos" -> allSampleGuests // Example if you add an "All" tab
+    private fun filterGuestsByStatus(statusFilter: String) {
+        // Use allFetchedGuests which contains data from the API
+        val filteredList = when (statusFilter.lowercase()) {
+            "activos" -> allFetchedGuests.filter { it.status.equals("Activo", ignoreCase = true) }
+            "pendientes" -> allFetchedGuests.filter { it.status.equals("Pendiente", ignoreCase = true) } // Assuming "Pendiente" is a possible estadoQr
+            "vencidos" -> allFetchedGuests.filter { it.status.equals("Vencido", ignoreCase = true) }   // Assuming "Vencido" is a possible estadoQr
+            // "todos" -> allFetchedGuests // If you add an "All" tab
             else -> {
-                Log.w("com.example.androidqr.ui.dashboard.DashboardFragment", "Unhandled tab status: $status, showing empty list.")
-                emptyList()
+                Log.w("DashboardFragment", "Unhandled tab status: $statusFilter, showing empty list or all if 'allFetchedGuests' is the default.")
+                // Decide what to show for an unhandled tab, maybe the first category or all.
+                // For now, let's default to all if no specific match, or emptyList if that's safer.
+                if (allFetchedGuests.isNotEmpty()) allFetchedGuests else emptyList()
             }
         }
         guestAdapter.updateData(filteredList)
+
+        // Show empty view if the filtered list is empty for the current tab
+        if (filteredList.isEmpty() && allFetchedGuests.isNotEmpty()) { // only show if allFetchedGuests is not empty (i.e. API call was successful)
+            //binding.emptyViewDashboard?.visibility = View.VISIBLE
+            //binding.emptyViewDashboard?.text = "No hay invitados con estado '$statusFilter'."
+            binding.guestsRecyclerView.visibility = View.GONE
+        } else if (filteredList.isNotEmpty()) {
+            //binding.emptyViewDashboard?.visibility = View.GONE
+            binding.guestsRecyclerView.visibility = View.VISIBLE
+        }
+        // If allFetchedGuests is empty, the general empty/error state from fetchGuestsFromApi will handle it.
     }
 
     override fun onDestroyView() {

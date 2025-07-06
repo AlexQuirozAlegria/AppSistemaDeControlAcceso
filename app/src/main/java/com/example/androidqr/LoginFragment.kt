@@ -29,6 +29,8 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
         val username = view?.findViewById<EditText>(R.id.username)?.text.toString()
         val password = view?.findViewById<EditText>(R.id.password)?.text.toString()
 
+        //return true;
+
         val loginRequest = LoginRequest(username, password)
         val apiServiceInstance: ApiServiceBD = RetrofitClient.instance
 

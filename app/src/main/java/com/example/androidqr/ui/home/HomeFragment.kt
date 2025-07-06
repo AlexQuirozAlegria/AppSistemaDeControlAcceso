@@ -21,6 +21,7 @@ import androidx.lifecycle.lifecycleScope // Import for coroutines
 import com.example.androidqr.databinding.FragmentHomeBinding
 import androidx.navigation.fragment.findNavController
 import com.example.androidqr.R
+import com.example.androidqr.network.QrDataRequest
 import com.example.androidqr.network.RetrofitClient
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
@@ -32,6 +33,7 @@ import java.io.FileOutputStream
 import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 class HomeFragment : Fragment(R.layout.fragment_home) {
@@ -79,21 +81,19 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
                     val requestData = QrDataRequest(
-                        text2 = text2,
-                        text3 = text3,
-                        invitationType = invitationType,
-                        date = tomorrowDate
+                        nombre = text2,
+                        apellidos = text3,
+                        tipoInvitacion = invitationType,
+                        fechaValidez = tomorrowDate
                     )
 
-                    val response = apiService.generateQrCodeFromApi(requestData)
-
-
+                    val response = apiService.generateQrCode(requestData)
 
                     if (response.isSuccessful) {
                         val apiResponse = response.body()
-                        if (apiResponse != null && apiResponse.qrData != null) {
+                        if (apiResponse != null) {
                             // Option A: API returned text to be encoded
-                            qrBitmap = generateQrCode(apiResponse.qrData) // Use your existing function
+                            qrBitmap = generateQrCode(apiResponse.qrCode) // Use your existing function
                             qrBitmap?.let {
                                 qrCodeImageView.setImageBitmap(it)
                                 qrCodeImageView.visibility = View.VISIBLE
@@ -103,23 +103,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                                 qrCodeImageView.visibility = View.GONE
                             }
 
-                            // Option B: API returned an image URL (you'd need Glide/Coil)
-                            /*
-                            apiResponse.qrImageUrl?.let { url ->
-                                // Use Glide or Coil to load the image
-                                // Glide.with(this@HomeFragment).load(url).into(qrCodeImageView)
-                                // qrCodeImageView.visibility = View.VISIBLE
-                                // You might not need the local qrBitmap in this case,
-                                // or you might download the image and then store it as a Bitmap
-                                // if you need to save it to gallery using your current method.
-                            } ?: run {
-                                Toast.makeText(requireContext(), "URL de imagen QR no encontrada en la respuesta.", Toast.LENGTH_SHORT).show()
-                            }
-                            */
-
                         } else {
                             // Handle empty or malformed successful response
-                            val errorMsg = apiResponse?.errorMessage ?: "Respuesta de API vacía o incorrecta."
+                            val errorMsg = apiResponse?.message ?: "Respuesta de API vacía o incorrecta."
                             Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_LONG).show()
                             qrCodeImageView.setImageBitmap(null)
                             qrCodeImageView.visibility = View.GONE
@@ -203,11 +189,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         return root
     }
 
-    private fun getTomorrowDateString(): String {
+    private fun getTomorrowDateString(): Date {
         val calendar = Calendar.getInstance()
         calendar.add(Calendar.DAY_OF_YEAR, 1) // Add one day
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) // API standard format
-        return dateFormat.format(calendar.time)
+        return dateFormat.parse(dateFormat.format(calendar.time)) ?: Date()
     }
 
     /**
