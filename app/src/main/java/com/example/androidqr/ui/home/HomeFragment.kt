@@ -7,75 +7,143 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
-import android.widget.ImageView // Import ImageView
+import android.widget.ImageView
 import android.widget.Toast
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope // Import for coroutines
 import com.example.androidqr.databinding.FragmentHomeBinding
 import androidx.navigation.fragment.findNavController
 import com.example.androidqr.R
-
-// ZXing imports (ensure you have the dependency in build.gradle)
+import com.example.androidqr.RetrofitClient
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import com.google.zxing.WriterException
 import com.google.zxing.common.BitMatrix
+import kotlinx.coroutines.launch // Import for coroutines
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
-
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class HomeFragment : Fragment(R.layout.fragment_home) {
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
 
-    // This will hold the generated QR code Bitmap
     private var qrBitmap: Bitmap? = null
-    // This will hold the text encoded in the QR code
-    private var displayedText: String = ""
+    // private var displayedText: String = "" // May not be needed if API returns QR directly or text for it
+
+    // Get the API service instance
+    private val apiService by lazy {
+        RetrofitClient.instance
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        // ViewModel setup (if you are using it for other purposes)
-        // val homeViewModel = ViewModelProvider(this).get(HomeViewModel::class.java)
-
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-
-
-        val generateQrButton: Button = binding.genQR //
-        val qrCodeImageView: ImageView = binding.imageView //
-        val shareButton: Button = binding.button2 //
+        val generateQrButton: Button = binding.genQR
+        val qrCodeImageView: ImageView = binding.imageView
+        val shareButton: Button = binding.button2
         val logout: Button = binding.logout
 
         generateQrButton.setOnClickListener {
-            displayedText = binding.editTextText3.text.toString() + "/" +
-                    binding.editTextText2.text.toString() + " / " +
-                    binding.invitationTypeSpinner.selectedItem.toString();
-            qrBitmap = generateQrCode(displayedText) // Generate the QR code bitmap
+            val text2 = binding.editTextText2.text.toString()
+            val text3 = binding.editTextText3.text.toString()
+            val invitationType = binding.invitationTypeSpinner.selectedItem.toString()
+            val tomorrowDate = getTomorrowDateString()
 
-            // Update the UI
-            qrBitmap?.let {
-                qrCodeImageView.setImageBitmap(it)
+            if (text2.isBlank() || text3.isBlank()) {
+                Toast.makeText(requireContext(), "Por favor, complete todos los campos.", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
 
-                qrCodeImageView.visibility = View.VISIBLE
+            // Show a loading indicator (optional, but good UX)
 
-            } ?: run {
-                // Handle case where QR code generation failed
-                qrCodeImageView.setImageBitmap(null) // Clear previous QR
-                qrCodeImageView.visibility = View.GONE
+            qrCodeImageView.visibility = View.GONE
+
+            // Launch a coroutine for the network call
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    val requestData = QrDataRequest(
+                        text2 = text2,
+                        text3 = text3,
+                        invitationType = invitationType,
+                        date = tomorrowDate
+                    )
+
+                    val response = apiService.generateQrCodeFromApi(requestData)
+
+
+
+                    if (response.isSuccessful) {
+                        val apiResponse = response.body()
+                        if (apiResponse != null && apiResponse.qrData != null) {
+                            // Option A: API returned text to be encoded
+                            qrBitmap = generateQrCode(apiResponse.qrData) // Use your existing function
+                            qrBitmap?.let {
+                                qrCodeImageView.setImageBitmap(it)
+                                qrCodeImageView.visibility = View.VISIBLE
+                            } ?: run {
+                                Toast.makeText(requireContext(), "Error al generar QR localmente.", Toast.LENGTH_SHORT).show()
+                                qrCodeImageView.setImageBitmap(null)
+                                qrCodeImageView.visibility = View.GONE
+                            }
+
+                            // Option B: API returned an image URL (you'd need Glide/Coil)
+                            /*
+                            apiResponse.qrImageUrl?.let { url ->
+                                // Use Glide or Coil to load the image
+                                // Glide.with(this@HomeFragment).load(url).into(qrCodeImageView)
+                                // qrCodeImageView.visibility = View.VISIBLE
+                                // You might not need the local qrBitmap in this case,
+                                // or you might download the image and then store it as a Bitmap
+                                // if you need to save it to gallery using your current method.
+                            } ?: run {
+                                Toast.makeText(requireContext(), "URL de imagen QR no encontrada en la respuesta.", Toast.LENGTH_SHORT).show()
+                            }
+                            */
+
+                        } else {
+                            // Handle empty or malformed successful response
+                            val errorMsg = apiResponse?.errorMessage ?: "Respuesta de API vacía o incorrecta."
+                            Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_LONG).show()
+                            qrCodeImageView.setImageBitmap(null)
+                            qrCodeImageView.visibility = View.GONE
+                        }
+                    } else {
+                        // Handle API error (e.g., 4xx or 5xx errors)
+                        val errorBody = response.errorBody()?.string() ?: "Error desconocido de API."
+                        Log.e("HomeFragment", "API Error: ${response.code()} - $errorBody")
+                        Toast.makeText(requireContext(), "Error de API: ${response.code()}", Toast.LENGTH_LONG).show()
+                        qrCodeImageView.setImageBitmap(null)
+                        qrCodeImageView.visibility = View.GONE
+                    }
+
+                } catch (e: Exception) {
+                    // Handle network errors (e.g., no internet) or other exceptions
+
+                    Log.e("HomeFragment", "Network/Request Exception: ${e.message}", e)
+                    Toast.makeText(requireContext(), "Error de red: ${e.message}", Toast.LENGTH_LONG).show()
+                    qrCodeImageView.setImageBitmap(null)
+                    qrCodeImageView.visibility = View.GONE
+                }
             }
         }
+
         fun saveQrCodeToGallery(bitmap: Bitmap) {
             val imageFileName = "QR_${System.currentTimeMillis()}.jpg"
             var fos: OutputStream? = null
@@ -86,16 +154,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     val contentValues = ContentValues().apply {
                         put(MediaStore.MediaColumns.DISPLAY_NAME, imageFileName)
                         put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-                        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + File.separator + "YourAppNameQR") // Saves in Pictures/YourAppNameQR
+                        put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + File.separator + "YourAppNameQR")
                     }
                     val imageUri = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
                     fos = imageUri?.let { resolver.openOutputStream(it) }
                 } else {
-                    // For older versions, this might require WRITE_EXTERNAL_STORAGE permission
-                    // which you should request at runtime if you haven't.
-                    // However, saving to app-specific directory is often better.
-                    // For simplicity, this example targets the public Pictures directory.
-                    // Be mindful of storage permissions on API < 29.
                     val imagesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString() + File.separator + "YourAppNameQR"
                     val imageDirFile = File(imagesDir)
                     if (!imageDirFile.exists()) {
@@ -105,8 +168,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     fos = FileOutputStream(image)
                 }
 
-                fos?.use { // 'use' will auto-close the stream
-                    val success = bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) // 90 is quality
+                fos?.use {
+                    val success = bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it)
                     if (success) {
                         Toast.makeText(requireContext(), "Código QR guardado en Galería.", Toast.LENGTH_SHORT).show()
                     } else {
@@ -121,6 +184,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 Toast.makeText(requireContext(), "Error al guardar imagen: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
+
         shareButton.setOnClickListener {
             if (qrBitmap != null) {
                 saveQrCodeToGallery(qrBitmap!!)
@@ -132,10 +196,18 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 ).show()
             }
         }
+
         logout.setOnClickListener {
-            findNavController().navigate(R.id.action_nh_to_login);
+            findNavController().navigate(R.id.action_nh_to_login)
         }
         return root
+    }
+
+    private fun getTomorrowDateString(): String {
+        val calendar = Calendar.getInstance()
+        calendar.add(Calendar.DAY_OF_YEAR, 1) // Add one day
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) // API standard format
+        return dateFormat.format(calendar.time)
     }
 
     /**
@@ -157,13 +229,13 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
             return bitmap
         } catch (e: WriterException) {
-            e.printStackTrace() // Log the error
+            Log.e("HomeFragment", "Error generating QR code bitmap", e)
         }
-        return null // Return null if there was an exception
+        return null
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding = null // Important to avoid memory leaks
+        _binding = null
     }
 }

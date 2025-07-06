@@ -39,6 +39,12 @@ android {
 }
 
 dependencies {
+    // Retrofit
+    implementation(libs.retrofit) // Check for the latest version
+    implementation(libs.converter.gson) // Or converter-moshi
+    // OkHttp (usually included with Retrofit, but good to be explicit for logging)
+    implementation(libs.okhttp) // Check for the latest version
+    implementation(libs.logging.interceptor) // For debugging network requests
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
