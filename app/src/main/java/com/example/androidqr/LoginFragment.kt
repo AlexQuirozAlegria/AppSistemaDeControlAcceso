@@ -17,7 +17,7 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
     private fun validFields(): Boolean {
         val usernameInput = view?.findViewById<EditText>(R.id.username)
         val passwordInput = view?.findViewById<EditText>(R.id.password)
-
+        
         return true
     }
 
