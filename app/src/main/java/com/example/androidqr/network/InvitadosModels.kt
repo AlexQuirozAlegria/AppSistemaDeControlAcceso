@@ -1,5 +1,6 @@
 package com.example.androidqr.network
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Contextual
 import java.util.Date
 
 @Serializable
@@ -8,7 +9,7 @@ data class InvitadoResponse(
     val nombre: String,
     val apellidos: String,
     val tipoInvitacion: String, // "Unica", "Recurrente" o "PorFecha"
-    val fechaValidez: Date?,
+    @Contextual val fechaValidez: Date?,
     val qrCode: String,
     val residenteId: Int,
     val estadoQr: String // "Activo", "Vencido", "Usado", "Cancelado"
