@@ -1,5 +1,8 @@
 package com.example.androidqr.network
 
+import com.example.androidqr.ui.home.QrApiResponse
+import com.example.androidqr.ui.home.QrDataRequest
+import okhttp3.ResponseBody
 import retrofit2.Response // Import Retrofit's Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -18,7 +21,6 @@ interface ApiServiceBD {
     suspend fun cancelInvitation(@Header("Authorization") token: String, @Path("id") invitationId: Int): Response<CancelInvitationResponse>
     // If your API returns an image URL directly:
     // suspend fun generateQrCodeFromApi(@Body request: QrDataRequest): Response<QrImageResponse>
-    @POST("api/Auth/login")
+    @POST("api/Account/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
-
 }
