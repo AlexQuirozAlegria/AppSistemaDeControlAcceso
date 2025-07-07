@@ -1,5 +1,6 @@
 package com.example.androidqr.ui.home
 
+import android.app.DatePickerDialog
 import android.content.ContentValues
 import android.content.Context
 import android.graphics.Bitmap
@@ -12,8 +13,12 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.EditText
 import android.widget.ImageView
+import android.widget.Spinner
 import android.widget.Toast
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.set
@@ -43,6 +48,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private val binding get() = _binding!!
 
     private var qrBitmap: Bitmap? = null
+    private lateinit var invitationTypeSpinner: Spinner
+    private lateinit var dateEditText: EditText
     // private var displayedText: String = "" // May not be needed if API returns QR directly or text for it
 
     // Get the API service instance
@@ -62,12 +69,61 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val qrCodeImageView: ImageView = binding.imageView
         val shareButton: Button = binding.button2
         val logout: Button = binding.logout
+        invitationTypeSpinner = binding.invitationTypeSpinner // Inicializar el Spinner
+        dateEditText = binding.editTextDate
+
+        val adapter = ArrayAdapter.createFromResource(
+            requireContext(),
+            R.array.invitation_types,
+            android.R.layout.simple_spinner_item
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        invitationTypeSpinner.adapter = adapter
+
+        invitationTypeSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selectedItem = parent?.getItemAtPosition(position).toString()
+                if (selectedItem == "PorFecha") {
+                    dateEditText.visibility = View.VISIBLE
+                } else {
+                    dateEditText.visibility = View.GONE
+                    dateEditText.setText("") // Limpiar la fecha si se cambia la opción
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                // No hacer nada
+            }
+        }
+
+        // Listener para el EditText de la fecha: Abre el DatePickerDialog
+        dateEditText.setOnClickListener {
+            showDatePickerDialog()
+        }
 
         generateQrButton.setOnClickListener {
             val text2 = binding.editTextText2.text.toString()
             val text3 = binding.editTextText3.text.toString()
             val invitationType = binding.invitationTypeSpinner.selectedItem.toString()
-            val tomorrowDate = getTomorrowDateString()
+
+            var fechaValidez: Date? = null
+            if (invitationType == "PorFecha") {
+                val dateString = dateEditText.text.toString()
+                if (dateString.isBlank()) {
+                    Toast.makeText(requireContext(), "Por favor, seleccione una fecha para la invitación 'PorFecha'.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+
+                // Convertir el String de la fecha a un objeto Date
+                try {
+                    val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                    fechaValidez = dateFormat.parse(dateString)
+                } catch (e: Exception) {
+                    Toast.makeText(requireContext(), "Formato de fecha inválido. Use YYYY-MM-DD.", Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+            }
+
 
             if (text2.isBlank() || text3.isBlank()) {
                 Toast.makeText(requireContext(), "Por favor, complete todos los campos.", Toast.LENGTH_SHORT).show()
@@ -98,7 +154,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                         nombre = text2,
                         apellidos = text3,
                         tipoInvitacion = invitationType,
-                        fechaValidez = tomorrowDate
+                        fechaValidez = fechaValidez
                     )
 
                     val response = apiService.generateQrCode(authHeader, requestData)
@@ -208,6 +264,28 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         calendar.add(Calendar.DAY_OF_YEAR, 1) // Add one day
         val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()) // API standard format
         return dateFormat.parse(dateFormat.format(calendar.time)) ?: Date()
+    }
+
+
+    // Función para mostrar el DatePickerDialog
+    private fun showDatePickerDialog() {
+        val calendar = Calendar.getInstance()
+        val year = calendar.get(Calendar.YEAR)
+        val month = calendar.get(Calendar.MONTH)
+        val day = calendar.get(Calendar.DAY_OF_MONTH)
+
+        val datePickerDialog = DatePickerDialog(
+            requireContext(),
+            { _, selectedYear, selectedMonth, selectedDay ->
+                // Formatear la fecha seleccionada a YYYY-MM-DD
+                val formattedDate = String.format(Locale.getDefault(), "%04d-%02d-%02d", selectedYear, selectedMonth + 1, selectedDay)
+                dateEditText.setText(formattedDate)
+            },
+            year,
+            month,
+            day
+        )
+        datePickerDialog.show()
     }
 
     /**
