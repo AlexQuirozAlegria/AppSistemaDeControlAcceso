@@ -1,13 +1,17 @@
 package com.example.androidqr.ui.dashboard
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope // Keep this for coroutines
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.example.androidqr.R
 import com.example.androidqr.databinding.FragmentDashboardBinding
 import com.example.androidqr.network.InvitadoResponse
 import com.example.androidqr.network.RetrofitClient
@@ -59,7 +63,15 @@ class DashboardFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val response = apiService.getMyInvitations("AUTORIZO") // Call the new API method
+                val sharedPref = requireContext().getSharedPreferences("mi_app_prefs", Context.MODE_PRIVATE)
+                val jwtToken = sharedPref.getString("jwt_token", null)
+                if (jwtToken == null) {
+                    Toast.makeText(requireContext(), "No hay sesión iniciada. Por favor, inicie sesión.", Toast.LENGTH_LONG).show()
+                    findNavController().navigate(R.id.action_nh_to_login)
+                    return@launch
+                }
+                val authHeader = "Bearer $jwtToken"
+                val response = apiService.getMyInvitations(authHeader)
                 if (response.isSuccessful) {
                     val invitadosFromApi = response.body()
                     if (invitadosFromApi != null && invitadosFromApi.isNotEmpty()) {
@@ -125,15 +137,12 @@ class DashboardFragment : Fragment() {
             binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Vencidos"))
             // binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Todos")) // If you want an "All" tab
         }
-
-
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 tab?.let {
                     filterGuestsByStatus(it.text.toString())
                 }
             }
-
             override fun onTabUnselected(tab: TabLayout.Tab?) { /* Do nothing */ }
             override fun onTabReselected(tab: TabLayout.Tab?) { /* Do nothing */ }
         })

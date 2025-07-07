@@ -21,9 +21,6 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
         
         return true
     }
-
-
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
