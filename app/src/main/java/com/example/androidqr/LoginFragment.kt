@@ -11,6 +11,7 @@ import androidx.navigation.fragment.findNavController
 import com.example.androidqr.network.LoginRequest
 import com.example.androidqr.network.RetrofitClient
 import kotlinx.coroutines.launch
+import android.content.Context
 
 class LoginFragment : Fragment(R.layout.fragment_login) {
 
@@ -45,9 +46,22 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                     val response = apiServiceInstance.login(loginRequest)
                     if (response.isSuccessful) {
                         val token = response.body()?.token
+
+                        if (response.body()?.rol == "Guardia"){
+                            Toast.makeText(requireContext(), "La app es para solo usuarios", Toast.LENGTH_LONG).show()
+                            return@launch ;
+                        }
+
                         if (token != null) {
+                            val sharedPref = requireActivity().getSharedPreferences("mi_app_prefs", Context.MODE_PRIVATE)
+
+                            // 2. Obtener un editor para escribir en las preferencias
+                            val editor = sharedPref.edit()
+
+                            // 3. Poner el token y aplicar los cambios
+                            editor.putString("jwt_token", token) // "jwt_token" es la clave para recuperar el token
+                            editor.apply()
                             Toast.makeText(requireContext(), "Login Successful", Toast.LENGTH_LONG).show()
-                            // TODO: Save token if needed
                             findNavController().navigate(R.id.action_loginFragment_to_navigation_home)
                         } else {
                             Toast.makeText(requireContext(), "Token faltante", Toast.LENGTH_SHORT).show()

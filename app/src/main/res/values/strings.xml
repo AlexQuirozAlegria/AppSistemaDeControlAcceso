@@ -5,7 +5,8 @@
     <string name="title_notifications">Historial</string>
 
     <string-array name="invitation_types">
-        <item>Única</item>
+        <item>Unica</item>
         <item>Recurrente</item>
+        <item>PorFecha</item>
     </string-array>
 </resources>

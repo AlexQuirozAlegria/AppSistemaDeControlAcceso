@@ -58,12 +58,16 @@ dependencies {
 
     // Networking (Retrofit & OkHttp)
     implementation(libs.retrofit)
-    implementation(libs.converter.gson) // Or consider 'converter-moshi' for potential performance benefits
     implementation(libs.okhttp) // Explicit for logging interceptor, though often a transitive dep of Retrofit
     implementation(libs.logging.interceptor) // For debugging network requests
 
     // QR Code Scanning
     implementation(libs.zxing.android.embedded)
+
+    //Serialization
+    implementation(libs.kotlinxSerializationJson)
+    implementation(libs.retrofit2KotlinxSerializationConverter)
+
 
     // Project-specific Core module (if 'libs.core' refers to a local module)
     // Ensure 'core' is a descriptive name in libs.versions.toml if it's a third-party library

@@ -10,6 +10,7 @@ data class QrDataRequest(
     val tipoInvitacion: String,  // "Unica", "Recurrente" o "PorFecha"
     @Contextual  val fechaValidez: Date? = null  // Opcional dependiendo del tipo de invitación
 )
+
 @Serializable
 data class QrDataResponse(
     val id: Int,

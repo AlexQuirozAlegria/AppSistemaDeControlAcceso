@@ -11,7 +11,8 @@ import retrofit2.http.Path
 interface ApiServiceBD {
     // Define your API endpoint path
     @POST("api/Invitado/create")
-    suspend fun generateQrCode(@Body request: QrDataRequest): Response<QrDataResponse>
+    suspend fun generateQrCode(@Header("Authorization") token: String, @Body request: QrDataRequest): Response<QrDataResponse>
+
     @GET("api/invitados/my-invitations")
     suspend fun getMyInvitations(@Header("Authorization") token: String): Response<List<InvitadoResponse>>
     @PUT("api/invitados/cancel/{id}")

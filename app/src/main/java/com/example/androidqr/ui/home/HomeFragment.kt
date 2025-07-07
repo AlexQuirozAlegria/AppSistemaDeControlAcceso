@@ -1,6 +1,7 @@
 package com.example.androidqr.ui.home
 
 import android.content.ContentValues
+import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.os.Build
@@ -79,6 +80,19 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
             // Launch a coroutine for the network call
             viewLifecycleOwner.lifecycleScope.launch {
+
+                val sharedPref = requireContext().getSharedPreferences("mi_app_prefs", Context.MODE_PRIVATE)
+                val jwtToken = sharedPref.getString("jwt_token", null)
+
+                if (jwtToken == null) {
+                    Toast.makeText(requireContext(), "No hay sesión iniciada. Por favor, inicie sesión.", Toast.LENGTH_LONG).show()
+                    findNavController().navigate(R.id.action_nh_to_login)
+                    return@launch
+                }
+
+                // Prepara el token con el prefijo "Bearer "
+                val authHeader = "Bearer $jwtToken"
+
                 try {
                     val requestData = QrDataRequest(
                         nombre = text2,
@@ -87,7 +101,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                         fechaValidez = tomorrowDate
                     )
 
-                    val response = apiService.generateQrCode(requestData)
+                    val response = apiService.generateQrCode(authHeader, requestData)
 
                     if (response.isSuccessful) {
                         val apiResponse = response.body()
