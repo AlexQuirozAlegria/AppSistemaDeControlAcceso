@@ -94,6 +94,20 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/genQR"
+        app:layout_constraintBottom_toTopOf="@+id/qrCodeLabel" />
+
+    <TextView
+        android:id="@+id/qrCodeLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="QR CODE"
+        android:textSize="30sp"
+        android:textStyle="bold"
+        android:layout_marginTop="8dp"
+        android:visibility="visible"
+        app:layout_constraintStart_toStartOf="@+id/imageView"
+        app:layout_constraintEnd_toEndOf="@+id/imageView"
+        app:layout_constraintTop_toBottomOf="@+id/imageView"
         app:layout_constraintBottom_toTopOf="@+id/button2" />
 
     <Button
@@ -104,7 +118,7 @@
         android:layout_marginEnd="16dp"
         android:text="Compartir"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/imageView"
+        app:layout_constraintTop_toBottomOf="@+id/qrCodeLabel"
         app:layout_constraintBottom_toTopOf="@+id/logout" />
 
     <Button

@@ -17,6 +17,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.ImageView
 import android.widget.Spinner
 import android.widget.Toast
@@ -50,6 +51,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private var qrBitmap: Bitmap? = null
     private lateinit var invitationTypeSpinner: Spinner
     private lateinit var dateEditText: EditText
+    private lateinit var qrCodeLabel: TextView
     // private var displayedText: String = "" // May not be needed if API returns QR directly or text for it
 
     // Get the API service instance
@@ -71,6 +73,12 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         val logout: Button = binding.logout
         invitationTypeSpinner = binding.invitationTypeSpinner // Inicializar el Spinner
         dateEditText = binding.editTextDate
+        qrCodeLabel = binding.qrCodeLabel // Inicializar el nuevo TextView
+
+        // Asegurarse de que el label y la imagen estén ocultos al inicio o al cargar el fragmento
+        qrCodeImageView.visibility = View.GONE
+        qrCodeLabel.visibility = View.GONE
+        shareButton.visibility = View.GONE
 
         val adapter = ArrayAdapter.createFromResource(
             requireContext(),
@@ -133,6 +141,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             // Show a loading indicator (optional, but good UX)
 
             qrCodeImageView.visibility = View.GONE
+            qrCodeLabel.visibility = View.GONE
+            shareButton.visibility = View.GONE
 
             // Launch a coroutine for the network call
             viewLifecycleOwner.lifecycleScope.launch {
@@ -167,10 +177,15 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                             qrBitmap?.let {
                                 qrCodeImageView.setImageBitmap(it)
                                 qrCodeImageView.visibility = View.VISIBLE
+                                qrCodeLabel.text = apiResponse.qrCode
+                                qrCodeLabel.visibility = View.VISIBLE
+                                shareButton.visibility = View.VISIBLE
                             } ?: run {
                                 Toast.makeText(requireContext(), "Error al generar QR localmente.", Toast.LENGTH_SHORT).show()
                                 qrCodeImageView.setImageBitmap(null)
                                 qrCodeImageView.visibility = View.GONE
+                                qrCodeLabel.visibility = View.GONE
+                                shareButton.visibility = View.GONE
                             }
 
                         } else {
@@ -179,6 +194,8 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                             Toast.makeText(requireContext(), errorMsg, Toast.LENGTH_LONG).show()
                             qrCodeImageView.setImageBitmap(null)
                             qrCodeImageView.visibility = View.GONE
+                            qrCodeLabel.visibility = View.GONE
+                            shareButton.visibility = View.GONE
                         }
                     } else {
                         // Handle API error (e.g., 4xx or 5xx errors)
@@ -187,15 +204,18 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                         Toast.makeText(requireContext(), "Error de API: ${response.code()}", Toast.LENGTH_LONG).show()
                         qrCodeImageView.setImageBitmap(null)
                         qrCodeImageView.visibility = View.GONE
+                        qrCodeLabel.visibility = View.GONE
+                        shareButton.visibility = View.GONE
                     }
 
                 } catch (e: Exception) {
                     // Handle network errors (e.g., no internet) or other exceptions
-
                     Log.e("HomeFragment", "Network/Request Exception: ${e.message}", e)
                     Toast.makeText(requireContext(), "Error de red: ${e.message}", Toast.LENGTH_LONG).show()
                     qrCodeImageView.setImageBitmap(null)
                     qrCodeImageView.visibility = View.GONE
+                    qrCodeLabel.visibility = View.GONE
+                    shareButton.visibility = View.GONE
                 }
             }
         }
