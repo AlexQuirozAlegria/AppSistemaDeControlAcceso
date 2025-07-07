@@ -57,6 +57,10 @@ class DashboardFragment : Fragment() {
 
         // El botón de recargar no está en el layout, por lo tanto, no hay lógica aquí.
         // Si se desea añadir de nuevo, se debe incluir en el XML y su lógica aquí.
+        binding.reloadButton.setOnClickListener {
+            fetchGuestsFromApi() // Llama a la función para recargar los invitados
+            Toast.makeText(requireContext(), "Recargando invitados...", Toast.LENGTH_SHORT).show()
+        }
 
         fetchGuestsFromApi() // Cargar los invitados inicialmente
 
