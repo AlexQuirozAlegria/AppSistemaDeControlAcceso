@@ -13,9 +13,9 @@ interface ApiServiceBD {
     @POST("api/Invitado/create")
     suspend fun generateQrCode(@Header("Authorization") token: String, @Body request: QrDataRequest): Response<QrDataResponse>
 
-    @GET("api/invitados/my-invitations")
+    @GET("api/Invitado/my-invitations")
     suspend fun getMyInvitations(@Header("Authorization") token: String): Response<List<InvitadoResponse>>
-    @PUT("api/invitados/cancel/{id}")
+    @PUT("api/Invitado/cancel/{id}")
     suspend fun cancelInvitation(@Header("Authorization") token: String, @Path("id") invitationId: Int): Response<CancelInvitationResponse>
     // If your API returns an image URL directly:
     // suspend fun generateQrCodeFromApi(@Body request: QrDataRequest): Response<QrImageResponse>

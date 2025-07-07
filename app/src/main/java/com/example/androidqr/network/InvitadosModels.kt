@@ -1,4 +1,5 @@
 package com.example.androidqr.network
+
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Contextual
 import java.util.Date
@@ -14,11 +15,13 @@ data class InvitadoResponse(
     val residenteId: Int,
     val estadoQr: String // "Activo", "Vencido", "Usado", "Cancelado"
 )
+
 @Serializable
 // Modelo para la respuesta de cancelación
 data class CancelInvitationResponse(
     val message: String
 )
+
 @Serializable
 // Modelo para el error de API
 data class ApiError(
