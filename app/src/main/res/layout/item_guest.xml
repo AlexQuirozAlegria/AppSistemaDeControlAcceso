@@ -1,24 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:padding="16dp"
-    android:background="?android:attr/selectableItemBackground"
+    android:background="?attr/selectableItemBackground"
     android:layout_marginBottom="8dp"
-    android:elevation="2dp"
+    android:elevation="4dp"
     android:clipToPadding="false"
-    android:clipChildren="false">
+    android:clipChildren="false"
+    android:backgroundTint="@android:color/white"
+    android:outlineProvider="background"
+    android:translationZ="4dp"
+    app:cardCornerRadius="12dp">
 
-    <!-- Fila 1: Nombre y Estado -->
+    <!-- Fila 1: Nombre del Invitado -->
     <TextView
         android:id="@+id/guestNameTextView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Nombre del Invitado Apellido Largo Que Se Corta"
-        android:textSize="18sp"
+        android:textSize="20sp"
         android:textStyle="bold"
-        android:textColor="?android:attr/textColorPrimary"
+        android:textColor="@color/design_default_color_primary_dark"
         android:maxLines="2"
         android:ellipsize="end"
         app:layout_constraintStart_toStartOf="parent"
@@ -26,62 +31,68 @@
         app:layout_constraintEnd_toStartOf="@+id/statusChip"
         app:layout_constraintHorizontal_bias="0"
         app:layout_constraintHorizontal_chainStyle="packed"
-        app:layout_constraintRight_toLeftOf="@id/statusChip"
-        app:layout_goneMarginEnd="8dp" />
+        android:layout_marginEnd="12dp" />
 
+    <!-- Chip de Estado -->
     <com.google.android.material.chip.Chip
         android:id="@+id/statusChip"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="69dp"
+        android:layout_height="46dp"
         android:text="Activo"
-        app:chipBackgroundColor="@color/design_default_color_primary"
-        app:chipStrokeWidth="0dp"
         android:textColor="@android:color/white"
-        app:chipCornerRadius="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/guestNameTextView"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:chipBackgroundColor="@color/design_default_color_primary"
+        app:chipCornerRadius="16dp"
+        app:chipStrokeWidth="0dp"
         app:layout_constraintBottom_toBottomOf="@+id/guestNameTextView"
-        app:layout_constraintStart_toEndOf="@+id/guestNameTextView"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1"
-        android:layout_marginStart="8dp" />
+        app:layout_constraintStart_toEndOf="@+id/guestNameTextView"
+        app:layout_constraintTop_toTopOf="@+id/guestNameTextView" />
 
-    <!-- Fila 2: Tipo de Invitación y Fecha de Expiración -->
+    <!-- Fila 2: Tipo de Invitación -->
+
+    <!-- Grupo de Fecha de Expiración -->
     <TextView
         android:id="@+id/invitationTypeTextView"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
+        android:layout_width="165dp"
+        android:layout_height="29dp"
+        android:layout_marginTop="12dp"
+        android:ellipsize="end"
+        android:maxLines="1"
         android:text="Tipo: Única"
         android:textColor="?android:attr/textColorSecondary"
-        android:maxLines="1"
-        android:ellipsize="end"
+        android:textSize="16sp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/guestNameTextView"
-        app:layout_constraintEnd_toStartOf="@+id/dateExpirationGroup"
-        app:layout_constraintHorizontal_bias="0"
-        app:layout_constraintHorizontal_chainStyle="packed"
-        app:layout_constraintRight_toLeftOf="@id/dateExpirationGroup"
-        app:layout_goneMarginEnd="8dp" />
+        app:layout_constraintTop_toBottomOf="@+id/guestNameTextView" />
+
+    <!-- Botón Cancelar -->
 
     <LinearLayout
         android:id="@+id/dateExpirationGroup"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="176dp"
+        android:layout_height="25dp"
+        android:layout_marginTop="12dp"
+        android:gravity="start|center_vertical"
         android:orientation="horizontal"
+        android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="@+id/invitationTypeTextView"
-        app:layout_constraintBottom_toBottomOf="@+id/invitationTypeTextView"
-        app:layout_constraintStart_toEndOf="@+id/invitationTypeTextView"
-        app:layout_constraintHorizontal_bias="1"
-        android:layout_marginStart="8dp">
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/invitationTypeTextView"
+        tools:visibility="visible">
 
         <TextView
             android:id="@+id/textDateExpiration"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Fecha de expiracion:"
-            android:textColor="?android:attr/textColorSecondary"
-            android:visibility="gone" />
+            android:text="Vence:"
+            android:textColor="?android:attr/textColorTertiary"
+            android:textSize="14sp"
+            android:textStyle="italic" />
 
         <TextView
             android:id="@+id/guestExpirationDateValue"
@@ -89,8 +100,27 @@
             android:layout_height="wrap_content"
             android:layout_marginStart="4dp"
             android:text="31/12/2025"
-            android:textColor="?android:attr/textColorSecondary"
-            android:visibility="gone" />
+            android:textColor="?android:attr/textColorTertiary"
+            android:textSize="14sp"
+            android:textStyle="italic" />
     </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/cancelButton"
+        android:layout_width="136dp"
+        android:layout_height="46dp"
+        android:layout_marginTop="32dp"
+        android:layout_marginEnd="12dp"
+        android:minHeight="48dp"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:text="Cancelar"
+        android:textColor="@android:color/white"
+        android:visibility="gone"
+        app:backgroundTint="@android:color/holo_red_dark"
+        app:cornerRadius="8dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/statusChip"
+        tools:visibility="visible" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

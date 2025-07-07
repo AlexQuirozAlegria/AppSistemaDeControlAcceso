@@ -21,7 +21,7 @@ import java.util.Date
 
 /**
  * Fragmento para el Dashboard que muestra la lista de invitados del residente.
- * Permite filtrar invitados por estado (Activos, Usados, Vencidos, Cancelados).
+ * Ahora muestra dos pestañas: "Activos" e "Invalidos".
  */
 class DashboardFragment : Fragment() {
 
@@ -30,6 +30,8 @@ class DashboardFragment : Fragment() {
 
     private lateinit var guestAdapter: GuestAdapter
     private var allFetchedGuests: List<Guest> = emptyList()
+    // Inicializar con "Activos" ya que será la primera pestaña por defecto
+    private var currentSelectedTab: String = "Activos"
 
     private val apiService by lazy {
         RetrofitClient.instance
@@ -53,7 +55,10 @@ class DashboardFragment : Fragment() {
         setupRecyclerView()
         setupTabLayout()
 
-        fetchGuestsFromApi()
+        // El botón de recargar no está en el layout, por lo tanto, no hay lógica aquí.
+        // Si se desea añadir de nuevo, se debe incluir en el XML y su lógica aquí.
+
+        fetchGuestsFromApi() // Cargar los invitados inicialmente
 
         return root
     }
@@ -62,7 +67,11 @@ class DashboardFragment : Fragment() {
      * Configura el RecyclerView con un LinearLayoutManager y el GuestAdapter.
      */
     private fun setupRecyclerView() {
-        guestAdapter = GuestAdapter(emptyList())
+        // Inicializar el adaptador con el callback para el botón Cancelar
+        guestAdapter = GuestAdapter(emptyList(), currentSelectedTab) { guestToCancel ->
+            // Lógica para manejar el clic en el botón Cancelar
+            cancelInvitation(guestToCancel)
+        }
         binding.guestsRecyclerView.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = guestAdapter
@@ -93,18 +102,18 @@ class DashboardFragment : Fragment() {
                     if (invitadosFromApi != null && invitadosFromApi.isNotEmpty()) {
                         allFetchedGuests = mapInvitadoResponseToGuest(invitadosFromApi)
                         // Asegurarse de que la pestaña seleccionada se filtre correctamente al cargar
+                        // Si no hay ninguna pestaña seleccionada (ej. primera carga), usar "Activos"
                         val selectedTab = binding.tabLayout.getTabAt(binding.tabLayout.selectedTabPosition)
                         selectedTab?.let {
                             filterGuestsByStatus(it.text.toString())
                         } ?: run {
-                            // Si no hay ninguna pestaña seleccionada (ej. primera carga), usar "Activos"
-                            filterGuestsByStatus("Activos")
+                            filterGuestsByStatus("Activos") // Por defecto "Activos"
                         }
                         binding.guestsRecyclerView.visibility = View.VISIBLE
                     } else {
                         Log.i("DashboardFragment", "API devolvió una lista vacía de invitados o cuerpo nulo.")
                         allFetchedGuests = emptyList()
-                        guestAdapter.updateData(emptyList())
+                        guestAdapter.updateData(emptyList(), currentSelectedTab) // Pasa el filtro actual
                         binding.guestsRecyclerView.visibility = View.GONE
                         Toast.makeText(requireContext(), "No hay invitados registrados.", Toast.LENGTH_SHORT).show()
                     }
@@ -130,11 +139,11 @@ class DashboardFragment : Fragment() {
             Guest(
                 id = invitadoApi.id,
                 name = "${invitadoApi.nombre} ${invitadoApi.apellidos}".trim(),
-                invitationType = invitadoApi.tipoInvitacion, // ¡CORRECCIÓN: Se pasa el tipo de invitación!
+                invitationType = invitadoApi.tipoInvitacion,
                 status = invitadoApi.estadoQr,
                 qrCode = invitadoApi.qrCode,
                 fechaVencimiento = invitadoApi.fechaValidez,
-                residenteId = invitadoApi.residenteId // Asegúrate de que este campo también se mapee
+                residenteId = invitadoApi.residenteId
             )
         }
     }
@@ -145,53 +154,96 @@ class DashboardFragment : Fragment() {
      */
     private fun showErrorState(message: String) {
         allFetchedGuests = emptyList()
-        guestAdapter.updateData(emptyList())
+        guestAdapter.updateData(emptyList(), currentSelectedTab) // Pasa el filtro actual
         binding.guestsRecyclerView.visibility = View.GONE
         Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
     }
 
     /**
      * Configura las pestañas del TabLayout y sus listeners para filtrar la lista de invitados.
+     * Ahora añade solo las pestañas "Activos" e "Invalidos".
      */
     private fun setupTabLayout() {
-        if (binding.tabLayout.tabCount == 0) {
-            binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Activos"))
-            binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Usados"))
-            binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Vencidos"))
-            binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Cancelados"))
-        }
+        binding.tabLayout.removeAllTabs() // Asegurarse de que no haya pestañas duplicadas
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Activos"))
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Invalidos"))
+
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
                 tab?.let {
-                    filterGuestsByStatus(it.text.toString())
+                    currentSelectedTab = it.text.toString() // Actualiza la pestaña seleccionada
+                    filterGuestsByStatus(currentSelectedTab)
                 }
             }
-            override fun onTabUnselected(tab: TabLayout.Tab?) {}
-            override fun onTabReselected(tab: TabLayout.Tab?) {}
+            override fun onTabUnselected(tab: TabLayout.Tab?) { /* No hacer nada */ }
+            override fun onTabReselected(tab: TabLayout.Tab?) { /* No hacer nada */ }
         })
+
+        // Seleccionar la primera pestaña por defecto al iniciar
+        binding.tabLayout.getTabAt(0)?.select()
     }
 
     /**
      * Filtra la lista de invitados mostrada en el RecyclerView según el estado seleccionado en la pestaña.
-     * @param statusFilter El estado por el cual filtrar (ej. "Activos", "Usados").
+     * @param statusFilter El estado por el cual filtrar (ej. "Activos", "Invalidos").
      */
     private fun filterGuestsByStatus(statusFilter: String) {
         val filteredList = when (statusFilter.lowercase()) {
             "activos" -> allFetchedGuests.filter { it.status.equals("Activo", ignoreCase = true) }
-            "usados" -> allFetchedGuests.filter { it.status.equals("Usado", ignoreCase = true) }
-            "vencidos" -> allFetchedGuests.filter { it.status.equals("Vencido", ignoreCase = true) }
-            "cancelados" -> allFetchedGuests.filter { it.status.equals("Cancelado", ignoreCase = true) }
+            "invalidos" -> allFetchedGuests.filter {
+                it.status.equals("Vencido", ignoreCase = true) ||
+                        it.status.equals("Usado", ignoreCase = true) ||
+                        it.status.equals("Cancelado", ignoreCase = true)
+            }
             else -> {
                 Log.w("DashboardFragment", "Estado de pestaña no manejado: $statusFilter. Mostrando lista completa.")
                 allFetchedGuests
             }
         }
-        guestAdapter.updateData(filteredList)
+        guestAdapter.updateData(filteredList, currentSelectedTab) // Pasa el filtro actual al adaptador
 
         if (filteredList.isEmpty()) {
             binding.guestsRecyclerView.visibility = View.GONE
         } else {
             binding.guestsRecyclerView.visibility = View.VISIBLE
+        }
+    }
+
+    /**
+     * Llama a la API para cancelar una invitación específica.
+     * @param guest El objeto Guest a cancelar.
+     */
+    private fun cancelInvitation(guest: Guest) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val sharedPref = requireContext().getSharedPreferences("mi_app_prefs", Context.MODE_PRIVATE)
+            val jwtToken = sharedPref.getString("jwt_token", null)
+
+            if (jwtToken == null) {
+                Toast.makeText(requireContext(), "No hay sesión iniciada para cancelar.", Toast.LENGTH_SHORT).show()
+                return@launch
+            }
+
+            try {
+                val authHeader = "Bearer $jwtToken"
+                val response = apiService.cancelInvitation(authHeader, guest.id)
+
+                if (response.isSuccessful) {
+                    Toast.makeText(requireContext(), "Invitación de ${guest.name} cancelada.", Toast.LENGTH_SHORT).show()
+                    fetchGuestsFromApi() // Vuelve a cargar la lista para reflejar el cambio
+                } else {
+                    val errorBody = response.errorBody()?.string()
+                    val errorMessage = if (!errorBody.isNullOrEmpty()) {
+                        "Error al cancelar invitación: $errorBody"
+                    } else {
+                        "Error al cancelar invitación. Código: ${response.code()}"
+                    }
+                    Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_LONG).show()
+                    Log.e("DashboardFragment", "Error al cancelar invitación: ${response.code()} - $errorBody")
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Error de conexión al cancelar: ${e.message}", Toast.LENGTH_LONG).show()
+                Log.e("DashboardFragment", "Excepción al cancelar invitación: ${e.message}", e)
+            }
         }
     }
 

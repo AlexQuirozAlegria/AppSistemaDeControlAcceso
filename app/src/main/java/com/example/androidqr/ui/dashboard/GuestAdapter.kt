@@ -3,93 +3,103 @@ package com.example.androidqr.ui.dashboard
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.LinearLayout // Importar LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-import com.example.androidqr.R // Importación para acceder a los IDs de recursos
-import com.google.android.material.chip.Chip // Importar Chip
+import com.example.androidqr.R
 import java.text.SimpleDateFormat
 import java.util.Locale
-import java.util.Date
+
+// Asegúrate de importar la clase Guest si está en un paquete diferente
+// import com.example.androidqr.data.model.Guest // Si Guest está en otro paquete
 
 /**
- * Adaptador para mostrar una lista de objetos Guest en un RecyclerView.
- * Se encarga de inflar el layout de cada elemento y vincular los datos.
+ * Adaptador para el RecyclerView que muestra la lista de invitados.
+ * @param guests La lista de objetos Guest a mostrar.
+ * @param currentTabFilter El filtro de la pestaña actual para determinar la visibilidad del botón Cancelar.
+ * @param onCancelClick Callback que se invoca cuando se hace clic en el botón Cancelar de un invitado.
  */
-class GuestAdapter(private var guestList: List<Guest>) :
-    RecyclerView.Adapter<GuestAdapter.GuestViewHolder>() {
+class GuestAdapter(
+    private var guests: List<Guest>,
+    private var currentTabFilter: String,
+    private val onCancelClick: (Guest) -> Unit
+) : RecyclerView.Adapter<GuestAdapter.GuestViewHolder>() {
 
     /**
-     * Crea y devuelve un ViewHolder para la vista de un elemento de la lista.
-     * @param parent El ViewGroup al que se adjuntará la nueva vista.
-     * @param viewType El tipo de vista del nuevo ViewHolder.
-     * @return Un nuevo GuestViewHolder que contiene la vista de un elemento de la lista.
+     * ViewHolder para cada elemento de la lista de invitados.
+     * Contiene las referencias a las vistas del layout item_guest.xml.
+     */
+    class GuestViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val guestNameTextView: TextView = itemView.findViewById(R.id.guestNameTextView)
+        val statusChip: TextView = itemView.findViewById(R.id.statusChip)
+        val invitationTypeTextView: TextView = itemView.findViewById(R.id.invitationTypeTextView)
+        val textDateExpiration: TextView = itemView.findViewById(R.id.textDateExpiration)
+        val guestExpirationDateValue: TextView = itemView.findViewById(R.id.guestExpirationDateValue)
+        val cancelButton: Button = itemView.findViewById(R.id.cancelButton) // Referencia al botón Cancelar
+        val dateExpirationGroup: LinearLayout = itemView.findViewById(R.id.dateExpirationGroup) // NUEVO: Referencia al LinearLayout
+    }
+
+    /**
+     * Crea y devuelve un ViewHolder para cada elemento de la lista.
+     * @param parent El ViewGroup padre al que se adjuntará la vista.
+     * @param viewType El tipo de vista (si tuvieras múltiples layouts de elementos).
+     * @return Un nuevo GuestViewHolder.
      */
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GuestViewHolder {
-        val itemView = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_guest, parent, false) // Asegúrate de que item_guest.xml está en res/layout
-        return GuestViewHolder(itemView)
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_guest, parent, false)
+        return GuestViewHolder(view)
     }
 
     /**
-     * Actualiza el contenido de un ViewHolder existente con los datos de un elemento en una posición dada.
-     * @param holder El ViewHolder que debe actualizarse.
-     * @param position La posición del elemento dentro del conjunto de datos del adaptador.
+     * Vincula los datos de un objeto Guest a las vistas del ViewHolder.
+     * @param holder El ViewHolder al que se vincularán los datos.
+     * @param position La posición del elemento en la lista.
      */
     override fun onBindViewHolder(holder: GuestViewHolder, position: Int) {
-        val currentGuest = guestList[position]
-        holder.bind(currentGuest)
-    }
+        val guest = guests[position]
 
-    /**
-     * Devuelve el número total de elementos en el conjunto de datos.
-     * @return El número total de elementos.
-     */
-    override fun getItemCount(): Int {
-        return guestList.size
-    }
+        holder.guestNameTextView.text = guest.name
+        holder.statusChip.text = guest.status
+        holder.invitationTypeTextView.text = "Tipo: ${guest.invitationType}"
 
-    /**
-     * Actualiza la lista de invitados en el adaptador y notifica al RecyclerView para que se refresque.
-     * @param newGuestList La nueva lista de invitados a mostrar.
-     */
-    fun updateData(newGuestList: List<Guest>) {
-        guestList = newGuestList
-        notifyDataSetChanged() // Para simplicidad. Para mejor rendimiento, considera DiffUtil.
-    }
-
-    /**
-     * ViewHolder para los elementos individuales de la lista de invitados.
-     * Contiene las referencias a las vistas dentro de item_guest.xml y un método para vincular datos.
-     */
-    inner class GuestViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        // Referencias a las vistas en tu layout item_guest.xml
-        // ¡Estos IDs deben coincidir EXACTAMENTE con los IDs en item_guest.xml que proporcionaste!
-        private val nameTextView: TextView = itemView.findViewById(R.id.guestNameTextView)
-        private val invitationTypeTextView: TextView = itemView.findViewById(R.id.invitationTypeTextView)
-        private val statusChip: Chip = itemView.findViewById(R.id.statusChip)
-        private val expirationDateLabel: TextView = itemView.findViewById(R.id.textDateExpiration) // ID de la etiqueta "Fecha de expiracion:"
-        private val expirationDateValue: TextView = itemView.findViewById(R.id.guestExpirationDateValue) // ID para el VALOR de la fecha
-
-
-        /**
-         * Vincula los datos de un objeto Guest a las vistas del ViewHolder.
-         * @param guest El objeto Guest cuyos datos se van a mostrar.
-         */
-        fun bind(guest: Guest) {
-            nameTextView.text = guest.name
-            invitationTypeTextView.text = "Tipo: ${guest.invitationType}"
-            statusChip.text = guest.status
-
-            // Formatear y mostrar la fecha de vencimiento si existe
-            if (guest.fechaVencimiento != null) {
-                val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                expirationDateValue.text = dateFormat.format(guest.fechaVencimiento)
-                expirationDateLabel.visibility = View.VISIBLE
-                expirationDateValue.visibility = View.VISIBLE
-            } else {
-                expirationDateLabel.visibility = View.GONE
-                expirationDateValue.visibility = View.GONE
-            }
+        // Formatear y mostrar la fecha de vencimiento si existe y el tipo es "PorFecha"
+        if (guest.fechaVencimiento != null && guest.invitationType == "PorFecha") {
+            val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            holder.guestExpirationDateValue.text = dateFormat.format(guest.fechaVencimiento)
+            holder.dateExpirationGroup.visibility = View.VISIBLE // Hacer visible el grupo completo
+        } else {
+            holder.dateExpirationGroup.visibility = View.GONE // Ocultar el grupo completo
         }
+
+        // Lógica para mostrar/ocultar el botón Cancelar
+        // El botón Cancelar solo debe ser visible si el invitado está "Activo"
+        // y la pestaña actual es "Activos"
+        if (guest.status.equals("Activo", ignoreCase = true) && currentTabFilter == "Activos") {
+            holder.cancelButton.visibility = View.VISIBLE
+            holder.cancelButton.setOnClickListener {
+                onCancelClick(guest) // Invoca el callback al hacer clic
+            }
+        } else {
+            holder.cancelButton.visibility = View.GONE
+            holder.cancelButton.setOnClickListener(null) // Elimina el listener para evitar fugas
+        }
+    }
+
+    /**
+     * Devuelve el número total de elementos en la lista de invitados.
+     * @return El número de invitados.
+     */
+    override fun getItemCount(): Int = guests.size
+
+    /**
+     * Actualiza los datos del adaptador y notifica los cambios al RecyclerView.
+     * @param newGuests La nueva lista de objetos Guest.
+     * @param newTabFilter El nuevo filtro de pestaña seleccionado.
+     */
+    fun updateData(newGuests: List<Guest>, newTabFilter: String) {
+        this.guests = newGuests
+        this.currentTabFilter = newTabFilter
+        notifyDataSetChanged() // Notifica al RecyclerView que los datos han cambiado
     }
 }
