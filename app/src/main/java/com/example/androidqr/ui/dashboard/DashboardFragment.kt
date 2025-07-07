@@ -1,11 +1,14 @@
 package com.example.androidqr.ui.dashboard
 
+import android.app.AlertDialog
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
+import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -17,13 +20,17 @@ import com.example.androidqr.network.InvitadoResponse
 import com.example.androidqr.network.RetrofitClient
 import com.google.android.material.tabs.TabLayout
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
 
-/**
+
+/*
  * Fragmento para el Dashboard que muestra la lista de invitados del residente.
- * Ahora muestra dos pestañas: "Activos" e "Invalidos".
+ * Permite filtrar invitados por estado (Activos, Usados, Vencidos, Cancelados).
+ * También maneja la interacción con los elementos de la lista para ver detalles y realizar acciones.
  */
-class DashboardFragment : Fragment() {
+class DashboardFragment : Fragment(), OnGuestClickListener { // Implementa la interfaz OnGuestClickListener
 
     private var _binding: FragmentDashboardBinding? = null
     private val binding get() = _binding!!
@@ -57,6 +64,7 @@ class DashboardFragment : Fragment() {
 
         // El botón de recargar no está en el layout, por lo tanto, no hay lógica aquí.
         // Si se desea añadir de nuevo, se debe incluir en el XML y su lógica aquí.
+        // Asegúrate de que reloadButton exista en fragment_dashboard.xml si lo usas.
         binding.reloadButton.setOnClickListener {
             fetchGuestsFromApi() // Llama a la función para recargar los invitados
             Toast.makeText(requireContext(), "Recargando invitados...", Toast.LENGTH_SHORT).show()
@@ -71,11 +79,8 @@ class DashboardFragment : Fragment() {
      * Configura el RecyclerView con un LinearLayoutManager y el GuestAdapter.
      */
     private fun setupRecyclerView() {
-        // Inicializar el adaptador con el callback para el botón Cancelar
-        guestAdapter = GuestAdapter(emptyList(), currentSelectedTab) { guestToCancel ->
-            // Lógica para manejar el clic en el botón Cancelar
-            cancelInvitation(guestToCancel)
-        }
+        // Inicializar el adaptador pasando 'this' (el fragmento) como el OnGuestClickListener
+        guestAdapter = GuestAdapter(emptyList(), this)
         binding.guestsRecyclerView.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = guestAdapter
@@ -117,7 +122,7 @@ class DashboardFragment : Fragment() {
                     } else {
                         Log.i("DashboardFragment", "API devolvió una lista vacía de invitados o cuerpo nulo.")
                         allFetchedGuests = emptyList()
-                        guestAdapter.updateData(emptyList(), currentSelectedTab) // Pasa el filtro actual
+                        guestAdapter.updateData(emptyList()) // Ya no necesita currentSelectedTab
                         binding.guestsRecyclerView.visibility = View.GONE
                         Toast.makeText(requireContext(), "No hay invitados registrados.", Toast.LENGTH_SHORT).show()
                     }
@@ -158,7 +163,7 @@ class DashboardFragment : Fragment() {
      */
     private fun showErrorState(message: String) {
         allFetchedGuests = emptyList()
-        guestAdapter.updateData(emptyList(), currentSelectedTab) // Pasa el filtro actual
+        guestAdapter.updateData(emptyList()) // Ya no necesita currentSelectedTab
         binding.guestsRecyclerView.visibility = View.GONE
         Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
     }
@@ -170,7 +175,9 @@ class DashboardFragment : Fragment() {
     private fun setupTabLayout() {
         binding.tabLayout.removeAllTabs() // Asegurarse de que no haya pestañas duplicadas
         binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Activos"))
-        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Invalidos"))
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Usados")) // Añadido de nuevo para consistencia
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Vencidos")) // Añadido de nuevo
+        binding.tabLayout.addTab(binding.tabLayout.newTab().setText("Cancelados")) // Añadido de nuevo
 
         binding.tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: TabLayout.Tab?) {
@@ -192,19 +199,17 @@ class DashboardFragment : Fragment() {
      * @param statusFilter El estado por el cual filtrar (ej. "Activos", "Invalidos").
      */
     private fun filterGuestsByStatus(statusFilter: String) {
-        val filteredList = when (statusFilter.lowercase()) {
+        val filteredList = when (statusFilter.lowercase(Locale.getDefault())) {
             "activos" -> allFetchedGuests.filter { it.status.equals("Activo", ignoreCase = true) }
-            "invalidos" -> allFetchedGuests.filter {
-                it.status.equals("Vencido", ignoreCase = true) ||
-                        it.status.equals("Usado", ignoreCase = true) ||
-                        it.status.equals("Cancelado", ignoreCase = true)
-            }
+            "usados" -> allFetchedGuests.filter { it.status.equals("Usado", ignoreCase = true) }
+            "vencidos" -> allFetchedGuests.filter { it.status.equals("Vencido", ignoreCase = true) }
+            "cancelados" -> allFetchedGuests.filter { it.status.equals("Cancelado", ignoreCase = true) }
             else -> {
                 Log.w("DashboardFragment", "Estado de pestaña no manejado: $statusFilter. Mostrando lista completa.")
                 allFetchedGuests
             }
         }
-        guestAdapter.updateData(filteredList, currentSelectedTab) // Pasa el filtro actual al adaptador
+        guestAdapter.updateData(filteredList) // Ya no necesita currentSelectedTab
 
         if (filteredList.isEmpty()) {
             binding.guestsRecyclerView.visibility = View.GONE
@@ -214,10 +219,78 @@ class DashboardFragment : Fragment() {
     }
 
     /**
-     * Llama a la API para cancelar una invitación específica.
-     * @param guest El objeto Guest a cancelar.
+     * Implementación del listener de clic del adaptador.
+     * Se llama cuando se hace clic en un elemento de la lista.
+     * @param guest El objeto Guest en el que se hizo clic.
      */
-    private fun cancelInvitation(guest: Guest) {
+    override fun onGuestClick(guest: Guest) {
+        // Solo abrir el diálogo si la invitación está "Activa"
+        if (guest.status.equals("Activo", ignoreCase = true)) {
+            showGuestDetailsDialog(guest)
+        } else {
+            Toast.makeText(requireContext(), "Solo se pueden gestionar invitaciones activas.", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Muestra un diálogo con los detalles del invitado y opciones de acción.
+     * @param guest El objeto Guest cuyos detalles se mostrarán.
+     */
+    private fun showGuestDetailsDialog(guest: Guest) {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_guest_details, null)
+
+        val dialogTitle: TextView = dialogView.findViewById(R.id.dialogTitle)
+        val dialogGuestName: TextView = dialogView.findViewById(R.id.dialogGuestName)
+        val dialogInvitationType: TextView = dialogView.findViewById(R.id.dialogInvitationType)
+        val dialogFechaValidez: TextView = dialogView.findViewById(R.id.dialogFechaValidez)
+        val dialogQrCode: TextView = dialogView.findViewById(R.id.dialogQrCode)
+
+        val cancelButton: ImageButton = dialogView.findViewById(R.id.cancelQrButton)
+        val deleteButton: ImageButton = dialogView.findViewById(R.id.deleteButton)
+        val editButton: ImageButton = dialogView.findViewById(R.id.editButton)
+
+        dialogGuestName.text = "Nombre: ${guest.name}"
+        dialogInvitationType.text = "Tipo de Invitación: ${guest.invitationType}"
+        dialogQrCode.text = "Código QR: ${guest.qrCode}"
+
+        // Formatear y mostrar la fecha de validez en el diálogo
+        if (guest.fechaVencimiento != null) {
+            val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            dialogFechaValidez.text = "Fecha de Validez: ${dateFormat.format(guest.fechaVencimiento)}"
+            dialogFechaValidez.visibility = View.VISIBLE
+        } else {
+            dialogFechaValidez.visibility = View.GONE
+        }
+
+        val alertDialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+
+        // Listeners para los botones del diálogo
+        cancelButton.setOnClickListener {
+            cancelInvitation(guest.id)
+            alertDialog.dismiss() // Cerrar el diálogo después de la acción
+        }
+
+        deleteButton.setOnClickListener {
+            deleteInvitation(guest.id)
+            alertDialog.dismiss() // Cerrar el diálogo después de la acción
+        }
+
+        editButton.setOnClickListener {
+            Toast.makeText(requireContext(), "Funcionalidad de edición no implementada aún para ID: ${guest.id}", Toast.LENGTH_SHORT).show()
+            // Aquí podrías navegar a un fragmento de edición o abrir otro diálogo con campos editables
+            alertDialog.dismiss() // Cerrar el diálogo
+        }
+
+        alertDialog.show()
+    }
+
+    /**
+     * Llama a la API para cancelar una invitación específica.
+     * @param invitationId El ID de la invitación a cancelar.
+     */
+    private fun cancelInvitation(invitationId: Int) {
         viewLifecycleOwner.lifecycleScope.launch {
             val sharedPref = requireContext().getSharedPreferences("mi_app_prefs", Context.MODE_PRIVATE)
             val jwtToken = sharedPref.getString("jwt_token", null)
@@ -229,10 +302,10 @@ class DashboardFragment : Fragment() {
 
             try {
                 val authHeader = "Bearer $jwtToken"
-                val response = apiService.cancelInvitation(authHeader, guest.id)
+                val response = apiService.cancelInvitation(authHeader, invitationId)
 
                 if (response.isSuccessful) {
-                    Toast.makeText(requireContext(), "Invitación de ${guest.name} cancelada.", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "Invitación cancelada.", Toast.LENGTH_SHORT).show()
                     fetchGuestsFromApi() // Vuelve a cargar la lista para reflejar el cambio
                 } else {
                     val errorBody = response.errorBody()?.string()
@@ -247,6 +320,39 @@ class DashboardFragment : Fragment() {
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Error de conexión al cancelar: ${e.message}", Toast.LENGTH_LONG).show()
                 Log.e("DashboardFragment", "Excepción al cancelar invitación: ${e.message}", e)
+            }
+        }
+    }
+
+    /**
+     * Realiza la llamada a la API para eliminar una invitación.
+     * @param invitationId El ID de la invitación a eliminar.
+     */
+    private fun deleteInvitation(invitationId: Int) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val sharedPref = requireContext().getSharedPreferences("mi_app_prefs", Context.MODE_PRIVATE)
+                val jwtToken = sharedPref.getString("jwt_token", null)
+                if (jwtToken == null) {
+                    Toast.makeText(requireContext(), "No hay sesión iniciada.", Toast.LENGTH_LONG).show()
+                    findNavController().navigate(R.id.action_nh_to_login)
+                    return@launch
+                }
+                val authHeader = "Bearer $jwtToken"
+
+                val response = apiService.deleteInvitation(authHeader, invitationId) // Asumiendo que tienes este método en ApiServiceBD
+
+                if (response.isSuccessful) {
+                    Toast.makeText(requireContext(), "Invitación eliminada con éxito.", Toast.LENGTH_SHORT).show()
+                    fetchGuestsFromApi() // Refrescar la lista después de la eliminación
+                } else {
+                    val errorBody = response.errorBody()?.string() ?: "Error desconocido al eliminar."
+                    Log.e("DashboardFragment", "Error al eliminar invitación: ${response.code()} - $errorBody")
+                    Toast.makeText(requireContext(), "Error al eliminar invitación: ${response.code()}", Toast.LENGTH_LONG).show()
+                }
+            } catch (e: Exception) {
+                Log.e("DashboardFragment", "Excepción de red/solicitud al eliminar: ${e.message}", e)
+                Toast.makeText(requireContext(), "Error de red al eliminar: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }

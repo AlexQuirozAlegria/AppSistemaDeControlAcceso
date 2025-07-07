@@ -2,8 +2,10 @@ package com.example.androidqr.network
 
 import retrofit2.Response // Import Retrofit's Response
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.Header
+import retrofit2.http.Headers
 import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Path
@@ -15,8 +17,28 @@ interface ApiServiceBD {
 
     @GET("api/Invitado/my-invitations")
     suspend fun getMyInvitations(@Header("Authorization") token: String): Response<List<InvitadoResponse>>
+
     @PUT("api/Invitado/cancel/{id}")
-    suspend fun cancelInvitation(@Header("Authorization") token: String, @Path("id") invitationId: Int): Response<CancelInvitationResponse>
+    suspend fun cancelInvitation(
+        @Header("Authorization") token: String,
+        @Path("id") invitationId: Int
+    ): Response<CancelInvitationResponse>
+
+    @DELETE("api/Invitado/{id}")
+    suspend fun deleteInvitation(
+        @Header("Authorization") token: String,
+        @Path("id") id: Int
+    ): Response<String>
+
+    @PUT("api/Invitado/{id}")
+    suspend fun updateInvitation(
+        @Header("Authorization") token: String,
+        @Path("id") id: Int
+    ): Response<String>
+
+
+
+
     // If your API returns an image URL directly:
     // suspend fun generateQrCodeFromApi(@Body request: QrDataRequest): Response<QrImageResponse>
     @POST("api/Account/login")
