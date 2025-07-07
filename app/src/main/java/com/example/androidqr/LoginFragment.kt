@@ -46,6 +46,7 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
                     val response = apiServiceInstance.login(loginRequest)
                     if (response.isSuccessful) {
                         val token = response.body()?.token
+                        var idResidente = response.body()?.token
 
                         if (response.body()?.rol == "Guardia"){
                             Toast.makeText(requireContext(), "La app es para solo usuarios", Toast.LENGTH_LONG).show()
@@ -60,6 +61,7 @@ class LoginFragment : Fragment(R.layout.fragment_login) {
 
                             // 3. Poner el token y aplicar los cambios
                             editor.putString("jwt_token", token) // "jwt_token" es la clave para recuperar el token
+                            editor.putString("idResidente", idResidente?.toString() ?: "");
                             editor.apply()
                             Toast.makeText(requireContext(), "Login Successful", Toast.LENGTH_LONG).show()
                             findNavController().navigate(R.id.action_loginFragment_to_navigation_home)

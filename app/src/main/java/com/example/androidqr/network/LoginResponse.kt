@@ -1,12 +1,12 @@
 package com.example.androidqr.network
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 @Serializable
 data class LoginResponse(
-    // If JSON key is "auth_token", use @SerialName
-    // @SerialName("auth_token")
-    val token: String?,
-    val username: String?,
-    val rol: String?
+    @SerialName("token") val token: String?,
+    @SerialName("username") val username: String?,
+    @SerialName("rol") val rol: String?,
+    @SerialName("residenteId") val idResidente: Int?
 )
