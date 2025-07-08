@@ -39,4 +39,11 @@ interface ApiServiceBD {
 
     @POST("api/Account/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
+
+    // NUEVO: Endpoint para obtener el historial de accesos
+    @POST("api/Acceso/history")
+    suspend fun getAccessHistory(
+        @Header("Authorization") token: String,
+        @Body request: AccesoHistoryRequest
+    ): Response<AccesoHistoryResponse> // O Response<List<AccesoResponse>> si la API devuelve directamente un array
 }

@@ -20,11 +20,9 @@
         android:name="com.example.androidqr.ui.dashboard.DashboardFragment"
         android:label="@string/title_dashboard"
         tools:layout="@layout/fragment_dashboard">
-        <!-- Acción para navegar al fragmento de edición -->
         <action
             android:id="@+id/action_navigation_dashboard_to_editGuestFragment"
             app:destination="@id/editGuestFragment" />
-        <!-- Acción para navegar al login si el token expira o no existe -->
         <action
             android:id="@+id/action_navigation_dashboard_to_loginFragment"
             app:destination="@id/loginFragment"
@@ -36,7 +34,14 @@
         android:id="@+id/navigation_notifications"
         android:name="com.example.androidqr.ui.notifications.NotificationsFragment"
         android:label="@string/title_notifications"
-        tools:layout="@layout/fragment_notifications" />
+        tools:layout="@layout/fragment_notifications">
+        <!-- NUEVO: Acción para navegar al login desde notificaciones -->
+        <action
+            android:id="@+id/action_navigation_notifications_to_loginFragment"
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/navigation_notifications"
+            app:popUpToInclusive="true"/>
+    </fragment>
 
     <fragment
         android:id="@+id/loginFragment"
@@ -50,17 +55,14 @@
             app:popUpToInclusive="true" />
     </fragment>
 
-    <!-- NUEVO: Fragmento para Editar Invitado -->
     <fragment
         android:id="@+id/editGuestFragment"
         android:name="com.example.androidqr.ui.editguest.EditGuestFragment"
         android:label="Editar Invitado"
         tools:layout="@layout/fragment_edit_guest">
-        <!-- Argumento para pasar el objeto Guest -->
         <argument
             android:name="guest"
             app:argType="com.example.androidqr.ui.dashboard.Guest" />
-        <!-- Acción para volver al login si el token expira o no existe -->
         <action
             android:id="@+id/action_editGuestFragment_to_loginFragment"
             app:destination="@id/loginFragment"
