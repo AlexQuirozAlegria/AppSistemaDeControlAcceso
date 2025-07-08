@@ -22,25 +22,21 @@ interface ApiServiceBD {
     suspend fun cancelInvitation(
         @Header("Authorization") token: String,
         @Path("id") invitationId: Int
-    ): Response<CancelInvitationResponse>
+    ): Response<Unit> // CAMBIO: Espera un cuerpo vacío en caso de éxito
 
     @DELETE("api/Invitado/{id}")
     suspend fun deleteInvitation(
         @Header("Authorization") token: String,
         @Path("id") id: Int
-    ): Response<String>
+    ): Response<Unit> // CAMBIO: Espera un cuerpo vacío en caso de éxito
 
     @PUT("api/Invitado/{id}")
     suspend fun updateInvitation(
         @Header("Authorization") token: String,
-        @Path("id") id: Int
-    ): Response<String>
+        @Path("id") id: Int,
+        @Body updatedGuestData: QrDataRequest
+    ): Response<InvitadoResponse>
 
-
-
-
-    // If your API returns an image URL directly:
-    // suspend fun generateQrCodeFromApi(@Body request: QrDataRequest): Response<QrImageResponse>
     @POST("api/Account/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 }

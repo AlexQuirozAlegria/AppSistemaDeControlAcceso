@@ -91,6 +91,12 @@ class DashboardFragment : Fragment(), OnGuestClickListener { // Implementa la in
      * Realiza una llamada a la API para obtener la lista de invitados del residente autenticado.
      * Maneja la autenticación, la respuesta de la API y los errores.
      */
+    override fun onResume() {
+        super.onResume()
+        // Recargar la lista cada vez que el fragmento se vuelve visible (ej. al regresar de la edición)
+        fetchGuestsFromApi()
+    }
+
     private fun fetchGuestsFromApi() {
         binding.guestsRecyclerView.visibility = View.GONE
 
@@ -278,8 +284,11 @@ class DashboardFragment : Fragment(), OnGuestClickListener { // Implementa la in
         }
 
         editButton.setOnClickListener {
-            Toast.makeText(requireContext(), "Funcionalidad de edición no implementada aún para ID: ${guest.id}", Toast.LENGTH_SHORT).show()
-            // Aquí podrías navegar a un fragmento de edición o abrir otro diálogo con campos editables
+            // MODIFICACIÓN: Navegar a EditGuestFragment y pasar el objeto Guest como Parcelable
+            val bundle = Bundle().apply {
+                putParcelable("guest", guest) // ¡Cambiado a putParcelable!
+            }
+            findNavController().navigate(R.id.action_navigation_dashboard_to_editGuestFragment, bundle)
             alertDialog.dismiss() // Cerrar el diálogo
         }
 
@@ -297,6 +306,7 @@ class DashboardFragment : Fragment(), OnGuestClickListener { // Implementa la in
 
             if (jwtToken == null) {
                 Toast.makeText(requireContext(), "No hay sesión iniciada para cancelar.", Toast.LENGTH_SHORT).show()
+                findNavController().navigate(R.id.action_navigation_dashboard_to_loginFragment)
                 return@launch
             }
 
@@ -310,7 +320,12 @@ class DashboardFragment : Fragment(), OnGuestClickListener { // Implementa la in
                 } else {
                     val errorBody = response.errorBody()?.string()
                     val errorMessage = if (!errorBody.isNullOrEmpty()) {
-                        "Error al cancelar invitación: $errorBody"
+                        try {
+                            val apiError = RetrofitClient.json.decodeFromString(com.example.androidqr.network.ApiError.serializer(), errorBody)
+                            apiError.message ?: "Error desconocido al cancelar: ${response.code()}"
+                        } catch (e: Exception) {
+                            "Error al cancelar invitación: $errorBody (Código: ${response.code()})"
+                        }
                     } else {
                         "Error al cancelar invitación. Código: ${response.code()}"
                     }
@@ -335,20 +350,30 @@ class DashboardFragment : Fragment(), OnGuestClickListener { // Implementa la in
                 val jwtToken = sharedPref.getString("jwt_token", null)
                 if (jwtToken == null) {
                     Toast.makeText(requireContext(), "No hay sesión iniciada.", Toast.LENGTH_LONG).show()
-                    findNavController().navigate(R.id.action_nh_to_login)
+                    findNavController().navigate(R.id.action_navigation_dashboard_to_loginFragment)
                     return@launch
                 }
                 val authHeader = "Bearer $jwtToken"
 
-                val response = apiService.deleteInvitation(authHeader, invitationId) // Asumiendo que tienes este método en ApiServiceBD
+                val response = apiService.deleteInvitation(authHeader, invitationId)
 
                 if (response.isSuccessful) {
                     Toast.makeText(requireContext(), "Invitación eliminada con éxito.", Toast.LENGTH_SHORT).show()
                     fetchGuestsFromApi() // Refrescar la lista después de la eliminación
                 } else {
-                    val errorBody = response.errorBody()?.string() ?: "Error desconocido al eliminar."
+                    val errorBody = response.errorBody()?.string()
+                    val errorMessage = if (!errorBody.isNullOrEmpty()) {
+                        try {
+                            val apiError = RetrofitClient.json.decodeFromString(com.example.androidqr.network.ApiError.serializer(), errorBody)
+                            apiError.message ?: "Error desconocido al eliminar: ${response.code()}"
+                        } catch (e: Exception) {
+                            "Error al eliminar invitación: $errorBody (Código: ${response.code()})"
+                        }
+                    } else {
+                        "Error al eliminar invitación. Código: ${response.code()}"
+                    }
+                    Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_LONG).show()
                     Log.e("DashboardFragment", "Error al eliminar invitación: ${response.code()} - $errorBody")
-                    Toast.makeText(requireContext(), "Error al eliminar invitación: ${response.code()}", Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {
                 Log.e("DashboardFragment", "Excepción de red/solicitud al eliminar: ${e.message}", e)

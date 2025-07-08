@@ -12,10 +12,10 @@ material = "1.12.0"
 constraintlayout = "2.2.1"
 lifecycleLivedataKtx = "2.9.1"
 lifecycleViewmodelKtx = "2.9.1"
-navigationFragmentKtx = "2.6.0"
-navigationUiKtx = "2.6.0"
-okhttp = "5.0.0"
-retrofit = "3.0.0"
+navigationFragmentKtx = "2.7.7" # CAMBIADO: Versión más reciente para compatibilidad
+navigationUiKtx = "2.7.7"     # CAMBIADO: Versión más reciente para compatibilidad
+okhttp = "4.12.0"             # CAMBIADO: Versión estable de OkHttp 4.x
+retrofit = "2.9.0"            # CAMBIADO: Versión estable de Retrofit 2.x
 zxingAndroidEmbedded = "4.3.0"
 androidxFragment = "1.8.8"
 kotlinxSerializationJson = "1.6.0"
@@ -39,8 +39,8 @@ okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 zxing-android-embedded = { module = "com.journeyapps:zxing-android-embedded", version.ref = "zxingAndroidEmbedded" }
 androidx-fragment-ktx = { group = "androidx.fragment", name = "fragment-ktx", version.ref = "androidxFragment" }
-kotlinxSerializationJson = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" } # <-- ¡DEFINICIÓN CORRECTA AQUÍ!
-retrofit2KotlinxSerializationConverter = { group = "com.jakewharton.retrofit", name = "retrofit2-kotlinx-serialization-converter", version.ref = "retrofit2KotlinxSerializationConverter" } # <-- ¡DEFINICIÓN CORRECTA AQUÍ!
+kotlinxSerializationJson = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
+retrofit2KotlinxSerializationConverter = { group = "com.jakewharton.retrofit", name = "retrofit2-kotlinx-serialization-converter", version.ref = "retrofit2KotlinxSerializationConverter" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

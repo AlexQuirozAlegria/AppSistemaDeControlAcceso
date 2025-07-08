@@ -24,7 +24,8 @@ object RetrofitClient {
         .writeTimeout(30, TimeUnit.SECONDS)
         .build()
 
-    private val json = Json {
+    // CAMBIO AQUÍ: Cambiado de 'private val json' a 'internal val json'
+    internal val json = Json {
         ignoreUnknownKeys = true
         coerceInputValues = true
         prettyPrint = true

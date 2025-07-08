@@ -1,8 +1,13 @@
+// build.gradle (Module: app)
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-
     id("org.jetbrains.kotlin.plugin.serialization") version "2.2.0"
+    // NUEVO: Añadir el plugin kotlin-parcelize
+    id("kotlin-parcelize")
+    // Opcional: Si usas Safe Args, asegúrate de que también esté aquí
+    // id("androidx.navigation.safeargs.kotlin")
 }
 
 android {
@@ -50,7 +55,7 @@ dependencies {
     // Lifecycle & ViewModel & LiveData (AndroidX Architecture Components)
     implementation(libs.androidx.lifecycle.livedata.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
-    implementation(libs.androidx.fragment.ktx) // Provides 'by viewModels()' and other fragment extensions
+    implementation(libs.androidx.fragment.ktx)
 
     // Navigation (AndroidX Navigation Component)
     implementation(libs.androidx.navigation.fragment.ktx)
@@ -58,8 +63,8 @@ dependencies {
 
     // Networking (Retrofit & OkHttp)
     implementation(libs.retrofit)
-    implementation(libs.okhttp) // Explicit for logging interceptor, though often a transitive dep of Retrofit
-    implementation(libs.logging.interceptor) // For debugging network requests
+    implementation(libs.okhttp)
+    implementation(libs.logging.interceptor)
 
     // QR Code Scanning
     implementation(libs.zxing.android.embedded)
@@ -68,16 +73,11 @@ dependencies {
     implementation(libs.kotlinxSerializationJson)
     implementation(libs.retrofit2KotlinxSerializationConverter)
 
-
     // Project-specific Core module (if 'libs.core' refers to a local module)
-    // Ensure 'core' is a descriptive name in libs.versions.toml if it's a third-party library
     implementation(libs.core)
 
     // Testing
-    testImplementation(libs.junit) // Unit tests
-    androidTestImplementation(libs.androidx.junit) // Instrumented tests
-    androidTestImplementation(libs.androidx.espresso.core) // UI tests
-
-    // ... other dependencies
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.2.0")
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
 }
